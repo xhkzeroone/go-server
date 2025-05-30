@@ -17,26 +17,24 @@ type RouteConfig struct {
 
 // Server implements Server for Gin.
 type Server struct {
+	*gin.Engine
 	*ProxyRouter
 	*ProviderRouter
-	engine     *gin.Engine
 	rootGroup  *gin.RouterGroup
 	config     *Config
 	httpServer *http.Server
 }
 
-func NewServer(configs ...*Config) *Server {
+func New(configs ...*Config) *Server {
 	cfg := GetConfig(configs...)
 	gin.SetMode(cfg.Mode)
-	engine := gin.New()
+	engine := gin.Default()
 	rootGroup := engine.Group(cfg.RootPath)
-	engine.Use(gin.Logger())
-	engine.Use(gin.Recovery())
 
 	return &Server{
+		Engine:         engine,
 		ProxyRouter:    &ProxyRouter{},
 		ProviderRouter: &ProviderRouter{},
-		engine:         engine,
 		rootGroup:      rootGroup,
 		config:         cfg,
 	}
@@ -46,7 +44,7 @@ func (s *Server) Start() error {
 	addr := s.config.GetAddr()
 	s.httpServer = &http.Server{
 		Addr:    addr,
-		Handler: s.engine,
+		Handler: s.Engine,
 	}
 
 	//add api from @Api tag
@@ -60,7 +58,7 @@ func (s *Server) Start() error {
 	return s.httpServer.ListenAndServe()
 }
 
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Stop(ctx context.Context) error {
 	log.Println("Shutting down server...")
 	if s.httpServer == nil {
 		return nil
@@ -74,45 +72,72 @@ func (s *Server) Routes(routes []RouteConfig) {
 	}
 }
 
+func (s *Server) Use(middleware ...gin.HandlerFunc) {
+	s.rootGroup.Use(middleware...)
+}
+
+func (s *Server) Group(relativePath string, middleware ...gin.HandlerFunc) *gin.RouterGroup {
+	return s.rootGroup.Group(relativePath, middleware...)
+}
+
+func (s *Server) Handle(httpMethod, relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.rootGroup.Handle(httpMethod, relativePath, handlers...)
+}
+
+func (s *Server) GET(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodGet, relativePath, handlers...)
+}
+
+func (s *Server) POST(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodPost, relativePath, handlers...)
+}
+
+func (s *Server) PUT(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodPut, relativePath, handlers...)
+}
+
+func (s *Server) DELETE(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodDelete, relativePath, handlers...)
+}
+
+func (s *Server) PATCH(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodPatch, relativePath, handlers...)
+}
+
+func (s *Server) OPTIONS(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodOptions, relativePath, handlers...)
+}
+
+func (s *Server) HEAD(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return s.Handle(http.MethodOptions, relativePath, handlers...)
+}
+
 func (s *Server) Add(method, path string, handler gin.HandlerFunc, middleware ...gin.HandlerFunc) {
-	fullHandlers := append(middleware, handler)
-	switch method {
-	case http.MethodGet:
-		s.rootGroup.GET(path, fullHandlers...)
-	case http.MethodPost:
-		s.rootGroup.POST(path, fullHandlers...)
-	case http.MethodPut:
-		s.rootGroup.PUT(path, fullHandlers...)
-	case http.MethodDelete:
-		s.rootGroup.DELETE(path, fullHandlers...)
-	case http.MethodPatch:
-		s.rootGroup.PATCH(path, fullHandlers...)
-	default:
-		log.Printf("Unsupported method: %s for path: %s", method, path)
-	}
+	handlers := append(middleware, handler)
+	s.Handle(method, path, handlers...)
 }
 
 func (s *Server) HealthCheck() {
-	s.engine.GET("/ping", func(c *gin.Context) {
+	s.Engine.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 
-	s.engine.GET("/liveness", func(c *gin.Context) {
-		c.JSON(StatusOK, gin.H{"status": "alive"})
+	s.Engine.GET("/liveness", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "alive"})
 	})
 
-	s.engine.GET("/readiness", func(c *gin.Context) {
+	s.Engine.GET("/readiness", func(c *gin.Context) {
 		// Bạn có thể kiểm tra kết nối DB, Redis, etc. tại đây
-		c.JSON(StatusOK, gin.H{"status": "ready"})
+		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 
-	s.engine.POST("/terminate", func(c *gin.Context) {
+	s.Engine.POST("/terminate", func(c *gin.Context) {
 		go func() {
 			time.Sleep(1 * time.Second)
-			_ = s.Shutdown(context.Background())
+			_ = s.Stop(context.Background())
 		}()
-		c.JSON(StatusOK, gin.H{"status": "terminating"})
+		c.JSON(http.StatusOK, gin.H{"status": "terminating"})
 	})
 }

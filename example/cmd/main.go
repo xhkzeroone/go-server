@@ -17,7 +17,7 @@ func main() {
 		RootPath: "/api/v1/",
 	}
 	// Khởi tạo serv với cấu hình
-	serv := server.NewServer(cfg)
+	serv := server.New(cfg)
 
 	funcHandler := []server.RouteConfig{
 		{
@@ -37,6 +37,13 @@ func main() {
 	serv.Routes(funcHandler)
 
 	serv.RegisterHandlersWithTags(&api.MyApiHandler{})
+
+	serv.Group("/admin").GET("/index", func(c *gin.Context) {
+		c.JSON(200, map[string]string{
+			"message": "/admin/index",
+		})
+	})
+
 	serv.HealthCheck()
 
 	// Bắt đầu chạy serv

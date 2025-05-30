@@ -10,21 +10,19 @@ type Config struct {
 	Host     string `mapstructure:"host" yaml:"host"`
 	Port     string `mapstructure:"port" yaml:"port"`
 	Mode     string `mapstructure:"mode" yaml:"mode"`
-	RootPath string `mapstructure:"root-path" yaml:"root-path"`
-	Engine   string `mapstructure:"engine" yaml:"engine"` //gin, fiber, echo
+	RootPath string `mapstructure:"rootPath" yaml:"rootPath"`
 }
 
 func (c *Config) GetAddr() string {
 	return c.Host + ":" + c.Port
 }
 
-func NewConfig() *Config {
+func DefaultConfig() *Config {
 	return &Config{
 		Host:     getEnv("SERVER_HOST", "localhost"),
 		Port:     getEnv("SERVER_PORT", "8080"),
 		Mode:     getEnv("SERVER_MODE", "debug"),
 		RootPath: getEnv("SERVER_ROOT_PATH", ""),
-		Engine:   getEnv("SERVER_ENGINE", "gin"),
 	}
 }
 
@@ -43,13 +41,12 @@ func GetConfig(configs ...*Config) *Config {
 	viper.SetDefault("server.host", "localhost")
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("server.mode", "debug")
-	viper.SetDefault("server.root-path", "")
+	viper.SetDefault("server.rootGroup-path", "")
 	viper.SetDefault("server.engine", "gin")
 	return &Config{
 		Host:     viper.GetString("server.host"),
 		Port:     viper.GetString("server.port"),
 		Mode:     viper.GetString("server.mode"),
-		RootPath: viper.GetString("server.root-path"),
-		Engine:   viper.GetString("server.engine"),
+		RootPath: viper.GetString("server.rootGroup-path"),
 	}
 }
