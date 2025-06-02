@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/spf13/viper"
-	"os"
+	"strings"
 )
 
 // Config defines server configuration.
@@ -18,31 +18,14 @@ func (c *Config) GetAddr() string {
 }
 
 func DefaultConfig() *Config {
-	return &Config{
-		Host:     getEnv("SERVER_HOST", "localhost"),
-		Port:     getEnv("SERVER_PORT", "8080"),
-		Mode:     getEnv("SERVER_MODE", "debug"),
-		RootPath: getEnv("SERVER_ROOT_PATH", ""),
-	}
-}
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
-func GetConfig(configs ...*Config) *Config {
-	if len(configs) > 0 && configs[0] != nil {
-		return configs[0]
-	}
 	viper.SetDefault("server.host", "localhost")
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("server.mode", "debug")
 	viper.SetDefault("server.rootGroup-path", "")
-	viper.SetDefault("server.engine", "gin")
+
 	return &Config{
 		Host:     viper.GetString("server.host"),
 		Port:     viper.GetString("server.port"),

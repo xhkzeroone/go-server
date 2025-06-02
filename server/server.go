@@ -25,8 +25,7 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func New(configs ...*Config) *Server {
-	cfg := GetConfig(configs...)
+func New(cfg *Config) *Server {
 	gin.SetMode(cfg.Mode)
 	engine := gin.Default()
 	rootGroup := engine.Group(cfg.RootPath)
