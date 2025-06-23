@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type RouteConfig struct {
@@ -108,7 +109,7 @@ func (s *Server) OPTIONS(relativePath string, handlers ...gin.HandlerFunc) gin.I
 }
 
 func (s *Server) HEAD(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
-	return s.Handle(http.MethodOptions, relativePath, handlers...)
+	return s.Handle(http.MethodHead, relativePath, handlers...)
 }
 
 func (s *Server) Add(method, path string, handler gin.HandlerFunc, middleware ...gin.HandlerFunc) {
